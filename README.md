@@ -201,3 +201,75 @@ Se quiser, posso montar o código completo com:
 - e um JSON de evento de exemplo para simular localmente.
 
 Quer isso?
+
+Claro, Diego! Vou te explicar passo a passo, de forma simples, o que está sendo pedido e como funciona a solução, beleza?
+
+---
+
+## 🎯 O que você precisa fazer?
+
+Você quer criar uma **Lambda em Python** que vai:
+
+1. **Ler eventos do DynamoDB Streams** (quando algo for inserido, atualizado ou deletado em uma tabela).
+2. **Agrupar esses eventos em lotes de 10**.
+3. **Publicar esse lote de eventos em um tópico SNS**, para que outras aplicações possam consumir.
+
+---
+
+## 🧠 Conceitos importantes
+
+### 🔄 DynamoDB Streams
+- É um recurso que guarda os **eventos que ocorrem em uma tabela** (insert, update, delete).
+- Esses eventos podem ser **lidos por uma Lambda** automaticamente.
+  
+### 🧪 SNS (Simple Notification Service)
+- É como um megafone: você envia uma mensagem para o **tópico**, e **quem estiver inscrito** (outra Lambda, fila SQS, etc) vai receber.
+
+---
+
+## 🔗 Como tudo se conecta?
+
+1. Você **ativa o Stream** em uma tabela DynamoDB.
+2. Conecta esse Stream com uma **função Lambda**.
+3. Configura a trigger para que a Lambda receba **batches de até 10 eventos**.
+4. Dentro da Lambda, você **coleta esses eventos e publica todos juntos no SNS**.
+
+---
+
+## 📦 Exemplo prático (imagina isso acontecendo)
+
+1. Alguém insere 3 itens na tabela DynamoDB.
+2. O DynamoDB Stream registra esses 3 eventos.
+3. Quando 10 eventos se acumularem (ou passar um tempo curto), a Lambda será chamada com os 10 eventos.
+4. A Lambda pega esses eventos e envia como **1 única mensagem** para o SNS.
+
+---
+
+## 🔧 O que você vai precisar criar
+
+1. **Uma função Lambda em Python** que:
+   - Lê os eventos do `event['Records']`.
+   - Junta todos em uma lista (`batch`).
+   - Publica a lista no SNS (em formato JSON).
+
+2. **Configuração da Trigger**:
+   - No console do DynamoDB → ativa o Stream.
+   - No console da Lambda → adiciona a trigger.
+   - Define o **tamanho do batch = 10**.
+
+3. **Um Tópico SNS**:
+   - Criado via console ou IaC.
+   - Usado para publicar os eventos.
+
+---
+
+## 🧪 E como testar?
+
+Você pode:
+- Fazer um `put_item` na tabela (via console, código ou CLI).
+- Acompanhar os **logs da Lambda no CloudWatch**.
+- Ver no SNS se os eventos chegaram (você pode conectar uma Lambda de teste no SNS para ver).
+
+---
+
+Se quiser, posso gerar o código Python da Lambda pronto, junto com um exemplo de evento simulado para você testar localmente. Quer?
