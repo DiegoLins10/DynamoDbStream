@@ -95,3 +95,109 @@ def lambda_handler(event, context):
 ---
 
 Se quiser, posso te mostrar como conectar isso a uma Lambda no console da AWS, ou até como usar com Step Functions. Quer seguir por aí?
+
+Perfeito, Diego! Com base no que você descreveu, aqui vai um esboço técnico e claro da **História de Usuário**, complementado com um **desenho da solução**, alinhado ao modelo de squads ágeis (com DOR e DOD implícitos). Vou organizar em seções, com foco em entregar valor como Tech Lead.
+
+---
+
+## 🧩 História de Usuário
+
+### **História**
+**EU**, como **Tech Lead**,  
+**PRECISO** que seja criada uma aplicação para publicação de eventos do DynamoDB,  
+**PARA** possibilitar o consumo por outras aplicações.
+
+---
+
+## 🧪 Visão Técnica
+
+### 📝 **Requisitos Técnicos**
+- Criação de uma aplicação **AWS Lambda** em **Python**.
+- Consumo de eventos do **DynamoDB Streams** via trigger.
+- Processamento em **batch de 10 eventos**.
+- Publicação dos eventos em um **tópico SNS**.
+- Log estruturado e visível em CloudWatch.
+- Código seguindo boas práticas Python (tipagem, modularização e testes integrados).
+
+---
+
+## ⚙️ Desenho da Solução
+
+### **1. Lambda em Python**
+A função será acionada via **trigger do DynamoDB Stream** (modo: `NEW_IMAGE` ou `NEW_AND_OLD_IMAGES`).
+
+```python
+import json
+import boto3
+
+sns_client = boto3.client('sns')
+TOPIC_ARN = "arn:aws:sns:sa-east-1:123456789012:meu-topico-sns"
+
+def lambda_handler(event, context):
+    batch_events = []
+
+    for record in event.get("Records", []):
+        if record["eventName"] in ["INSERT", "MODIFY", "REMOVE"]:
+            payload = {
+                "eventName": record["eventName"],
+                "newImage": record["dynamodb"].get("NewImage"),
+                "oldImage": record["dynamodb"].get("OldImage")
+            }
+            batch_events.append(payload)
+    
+    # Publicar em lote (exemplo: enviar como lista em um único evento SNS)
+    if batch_events:
+        sns_client.publish(
+            TopicArn=TOPIC_ARN,
+            Message=json.dumps(batch_events),
+            Subject="Publicação DynamoDB Stream"
+        )
+```
+
+### **2. Trigger de DynamoDB Stream**
+- Configurada na tabela DynamoDB desejada.
+- Modo sugerido: `NEW_AND_OLD_IMAGES`.
+- Buffer de 10 eventos via configuração da trigger no console ou IaC.
+
+### **3. Batch Size**
+- Configurar **batch size de 10 eventos** na trigger da Lambda.
+
+### **4. Publicação no SNS**
+- Cada lote vira **uma única publicação** com lista de eventos.
+
+---
+
+## 🧪 Testes
+
+### **Testes Integrados**
+- Simulação de inserções e updates na tabela DynamoDB.
+- Verificação de entrega do lote no tópico SNS (ex: via Lambda listener ou log).
+- Confirmação de logs estruturados no CloudWatch.
+
+---
+
+## 📈 Observabilidade
+
+### Provocadores:
+| Questão | Status |
+|--------|--------|
+| Logs bem definidos e claros para troubleshooting? | ✅ `print()` estruturado (ou uso do `logger`) |
+| Métricas e alertas customizados? | ❌ Pendente |
+| Monitoração da aplicação? | ❌ Pendente |
+
+---
+
+## 🔗 Links úteis
+- [📘 Exemplo de Implementação - AWS Docs](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.Lambda.Tutorial.html)
+- [✅ Checklist Code Review da Equipe]
+- [📄 DOR e DOD da Equipe]
+- [🧱 Template de História]
+
+---
+
+Se quiser, posso montar o código completo com:
+- deploy via SAM ou CDK,
+- um listener SNS para testes,
+- e um JSON de evento de exemplo para simular localmente.
+
+Quer isso?
